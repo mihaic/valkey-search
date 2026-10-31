@@ -1358,7 +1358,8 @@ int VectorSVS<T>::RespondWithInfoImpl(ValkeyModuleCtx* ctx) const {
   EmitDataTypeInfo(ctx);
   ValkeyModule_ReplyWithSimpleString(ctx, "algorithm");
   const bool trained = build_config_.training_threshold > 0;
-  ValkeyModule_ReplyWithArray(ctx, trained ? 18 : 14);
+  const bool leanvec = IsSvsLeanVecCompression(build_config_.compression);
+  ValkeyModule_ReplyWithArray(ctx, (trained ? 18 : 14) + (leanvec ? 2 : 0));
   ValkeyModule_ReplyWithSimpleString(ctx, "name");
   ValkeyModule_ReplyWithSimpleString(
       ctx, std::string(
@@ -1385,6 +1386,10 @@ int VectorSVS<T>::RespondWithInfoImpl(ValkeyModuleCtx* ctx) const {
     ValkeyModule_ReplyWithSimpleString(ctx, "compression_pending");
     ValkeyModule_ReplyWithLongLong(
         ctx, compression_pending_.load(std::memory_order_acquire) ? 1 : 0);
+  }
+  if (leanvec) {
+    ValkeyModule_ReplyWithSimpleString(ctx, "reduce");
+    ValkeyModule_ReplyWithLongLong(ctx, build_config_.leanvec_dims);
   }
   // Bytes SVS holds for the index's graph, data and metadata; 0 before the
   // first add.

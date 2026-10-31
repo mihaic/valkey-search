@@ -747,6 +747,10 @@ class TestSVSVamanaSmoke(ValkeySearchTestCaseBase):
         assert algorithm["compression"] == f"SVS_COMPRESSION_{compression}"
         assert algorithm["training_threshold"] == 1024
         assert algorithm["compression_pending"] == 1
+        if compression.startswith("LEANVEC"):
+            assert algorithm["reduce"] == 1
+        else:
+            assert "reduce" not in algorithm
 
     @pytest.mark.parametrize("compression",
                              ["LEANVEC4X4", "LEANVEC4X8", "LEANVEC8X8"])
