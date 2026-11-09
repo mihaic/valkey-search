@@ -136,6 +136,15 @@ class VectorSVS : public VectorType<T> {
       absl::string_view attribute_identifier,
       SupplementalContentChunkIter &&iter,
       int db_num) ABSL_NO_THREAD_SAFETY_ANALYSIS;
+  // Loads an index saved by svs_index_save to `directory`, for benchmarks.
+  // `sync_kind` is an svs_sync_kind value. Tracks no keys: searches return
+  // only labels the caller tracks.
+  static absl::StatusOr<std::shared_ptr<VectorSVS<T>>> LoadFromDirectory(
+      const data_model::VectorIndex &vector_index_proto,
+      absl::string_view attribute_identifier,
+      data_model::AttributeDataType attribute_data_type, int db_num,
+      const std::string &directory,
+      uint32_t sync_kind) ABSL_NO_THREAD_SAFETY_ANALYSIS;
   ~VectorSVS() override;
 
   size_t GetCapacity() const override ABSL_NO_THREAD_SAFETY_ANALYSIS;

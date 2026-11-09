@@ -171,6 +171,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
     target_link_libraries(vector_svs_threadpool_test PRIVATE vector_svs)
     target_link_libraries(vector_svs_threadpool_test PRIVATE svs_c_api_static)
     finalize_test_flags(vector_svs_threadpool_test)
+
+    # SVSBench-style search benchmark of a saved SVS index through VectorSVS.
+    add_executable(search_vector_svs
+        ${CMAKE_CURRENT_LIST_DIR}/svsbench/search_vector_svs.cc)
+    # Link as the SVS tests do, without finalize_test_flags' -O1 and gtest.
+    target_link_options(search_vector_svs PRIVATE "LINKER:--start-group")
+    target_link_libraries(search_vector_svs PRIVATE testing_common_base)
+    target_link_libraries(search_vector_svs PRIVATE vector_svs)
+    target_link_libraries(search_vector_svs PRIVATE svs_c_api_static)
+    target_link_libraries(search_vector_svs PRIVATE ${THIRD_PARTY_LIBS})
+    target_link_libraries(search_vector_svs PRIVATE lib_to_add_end_group_flag)
 endif()
 
 # 1. Core Test Suite - consolidates core functionality tests

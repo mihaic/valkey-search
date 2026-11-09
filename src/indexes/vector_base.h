@@ -692,11 +692,11 @@ class VectorBase : public IndexBase {
   virtual std::optional<hnswlib::tableint> GetAlgoIdLockFree(
       uint64_t internal_id) const = 0;
   mutable absl::Mutex resize_mutex_;
-
- private:
   absl::StatusOr<uint64_t> TrackKey(const InternedStringPtr &key,
                                     float magnitude)
       ABSL_LOCKS_EXCLUDED(key_to_metadata_mutex_);
+
+ private:
   absl::StatusOr<std::optional<uint64_t>> UnTrackKey(
       const InternedStringPtr &key) ABSL_LOCKS_EXCLUDED(key_to_metadata_mutex_);
   absl::StatusOr<bool> IsVectorUnchanged(const InternedStringPtr &key,

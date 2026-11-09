@@ -1223,6 +1223,53 @@ absl::StatusOr<std::shared_ptr<VectorSVS<T>>> VectorSVS<T>::LoadFromRDB(
 }
 
 template <typename T>
+absl::StatusOr<std::shared_ptr<VectorSVS<T>>> VectorSVS<T>::LoadFromDirectory(
+    const data_model::VectorIndex& vector_index_proto,
+    absl::string_view attribute_identifier,
+    data_model::AttributeDataType attribute_data_type, int db_num,
+    const std::string& directory, uint32_t sync_kind) {
+#if defined(__linux__) && defined(__x86_64__)
+  VMSDK_ASSIGN_OR_RETURN(auto instance,
+                         Create(vector_index_proto, attribute_identifier,
+                                attribute_data_type, db_num));
+  if (!instance->unavailable_.empty()) {
+    return absl::UnimplementedError(instance->unavailable_);
+  }
+  // The saved index already holds its final storage.
+  instance->compression_pending_.store(false, std::memory_order_relaxed);
+  ScopedSvsError err;
+  auto builder = AssembleIndexBuilder(
+      instance->build_config_, vector_index_proto.distance_metric(),
+      instance->dimensions_, instance->attribute_identifier_.c_str(),
+      err.get());
+  if (!builder.ok()) return builder.status();
+  svs_dynamic_index_params_t params = SVS_INIT_DYNAMIC_INDEX_PARAMS();
+  params.blocksize_bytes = instance->build_config_.blocksize_bytes;
+  params.sync_kind = sync_kind;
+  svs_index_h index = svs_index_load_dynamic_ex(
+      builder->get(), directory.c_str(), &params, err.get());
+  if (index == nullptr) {
+    return SvsErrorToStatus(err.get(), "index_load_dynamic_ex");
+  }
+  {
+    absl::WriterMutexLock lock(&instance->resize_mutex_);
+    instance->svs_index_ = index;
+  }
+  instance->mutations_exclusive_.store(sync_kind == SVS_SYNC_KIND_NONE,
+                                       std::memory_order_release);
+  return instance;
+#else
+  (void)vector_index_proto;
+  (void)attribute_identifier;
+  (void)attribute_data_type;
+  (void)db_num;
+  (void)directory;
+  (void)sync_kind;
+  return absl::UnimplementedError(kUnavailableMsg);
+#endif
+}
+
+template <typename T>
 bool VectorSVS<T>::IsValidVectorData(absl::string_view record) const {
 #if defined(__linux__) && defined(__x86_64__)
   return CheckFiniteVector<T>(reinterpret_cast<const T*>(record.data()),
